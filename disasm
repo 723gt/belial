@@ -1,4 +1,4 @@
 #!/usr/bin/env ruby
 
 # puts RubyVM::InstructionSequence.compile_file(ARGV[0], false).disasm
-print RubyVM::InstructionSequence.compile_file(ARGV[0], false).to_a
+print RubyVM::InstructionSequence.compile_file(ARGV[0], false).to_a.last

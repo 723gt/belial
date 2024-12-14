@@ -2,7 +2,7 @@ module Belial
   class VM
     EP = 4
     attr_reader :iseq, :main, :eq, :stack
-    def initialize(iseq)
+    def initialize(iseq, is_debug = false)
       @iseq = iseq
       @stack = []
       @main = generate_main
@@ -10,6 +10,7 @@ module Belial
       ep_point = stack_info[:local_size] + 1
       ep_point.times { push nil}
       @ep = stack_info[:local_size]
+      @is_debug = !!is_debug
     end
 
     def run
@@ -22,13 +23,13 @@ module Belial
     def execute(ins)
       opecode = ins.first
       operand = ins[1..-1]
-      $stderr.puts "==== #{opecode}(#{operand.map(&:inspect).join(', ')})"
+      $stderr.puts "==== #{opecode}(#{operand.map(&:inspect).join(', ')})" if @is_debug
       case opecode
       when :putself
         push @main
       when :putstring, :putobject, :duparray
         push operand.first
-      when :send
+      when :send, :objtostring
         # stack ["hello world"]
         # send({:mid=>:puts, :flag=>20, :orig_argc=>1}, nil)
         call_info = operand.first # {:mid=>:puts, :flag=>20, :orig_argc=>1}
@@ -53,8 +54,15 @@ module Belial
         if klass
           push Module.const_get(operand[0])
         end
+      when :concatstrings
+        concasts = []
+        time = operand[0]
+        time.times do
+          concasts.push(pop)
+        end
+        push concasts.reverse.join
       end
-      print_stack
+      print_stack if @is_debug
     end
 
     def push(val)
