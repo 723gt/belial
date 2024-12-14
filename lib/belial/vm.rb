@@ -33,9 +33,16 @@ module Belial
         # stack ["hello world"]
         # send({:mid=>:puts, :flag=>20, :orig_argc=>1}, nil)
         call_info = operand.first # {:mid=>:puts, :flag=>20, :orig_argc=>1}
+        flag = call_info[:flag]
         args = Array.new(call_info[:orig_argc]){ pop }.reverse  # args: ["hello world"]
-        reverse = pop # main
-        push reverse.send(call_info[:mid], *args) # main.send(puts, ["hello world"])
+        case flag
+        when 20
+          reverse = pop # main
+          push reverse.send(call_info[:mid], *args) # main.send(puts, ["hello world"])
+        when 16
+          reverse = pop.dup
+          push reverse.send(call_info[:mid], *args)
+        end
       when :pop
         pop
       when :setlocal
