@@ -1,0 +1,3 @@
+module Belial
+
+end
