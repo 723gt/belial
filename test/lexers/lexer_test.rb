@@ -5,21 +5,54 @@ require './lib/belial/lexer/token.rb'
 class LexicalAnalyzerTest < Minitest::Test
 
   def test_createLexer
-    input = '=+(){},;'
+    input = 'let five = 5
+            let ten = 10
+            def add(x, y)
+            x + y
+            end
+            let result = add(five, ten)'
+
     tests = [
+      Belial::Lexer::Token.new(Belial::Lexer::LET, "let"),
+      Belial::Lexer::Token.new(Belial::Lexer::IDENT, "five"),
       Belial::Lexer::Token.new(Belial::Lexer::ASSIGN, Belial::Lexer::ASSIGN),
-      Belial::Lexer::Token.new(Belial::Lexer::PLUS, Belial::Lexer::PLUS),
+      Belial::Lexer::Token.new(Belial::Lexer::INT, 5),
+
+      Belial::Lexer::Token.new(Belial::Lexer::LET, "let"),
+      Belial::Lexer::Token.new(Belial::Lexer::IDENT, "ten"),
+      Belial::Lexer::Token.new(Belial::Lexer::ASSIGN, Belial::Lexer::ASSIGN),
+      Belial::Lexer::Token.new(Belial::Lexer::INT, 10),
+
+      Belial::Lexer::Token.new(Belial::Lexer::METHOD, "def"),
+      Belial::Lexer::Token.new(Belial::Lexer::IDENT, "add"),
       Belial::Lexer::Token.new(Belial::Lexer::LPAREN, Belial::Lexer::LPAREN),
-      Belial::Lexer::Token.new(Belial::Lexer::RPAREN, Belial::Lexer::RPAREN),
-      Belial::Lexer::Token.new(Belial::Lexer::LBRACE, Belial::Lexer::LBRACE),
-      Belial::Lexer::Token.new(Belial::Lexer::RBRACE, Belial::Lexer::RBRACE),
+      Belial::Lexer::Token.new(Belial::Lexer::IDENT, "x"),
       Belial::Lexer::Token.new(Belial::Lexer::COMMA, Belial::Lexer::COMMA),
-      Belial::Lexer::Token.new(Belial::Lexer::SEMICOLON, Belial::Lexer::SEMICOLON)
+      Belial::Lexer::Token.new(Belial::Lexer::IDENT, "y"),
+      Belial::Lexer::Token.new(Belial::Lexer::RPAREN, Belial::Lexer::RPAREN),
+
+      Belial::Lexer::Token.new(Belial::Lexer::IDENT, "x"),
+      Belial::Lexer::Token.new(Belial::Lexer::PLUS, Belial::Lexer::PLUS),
+      Belial::Lexer::Token.new(Belial::Lexer::IDENT, "y"),
+
+      Belial::Lexer::Token.new(Belial::Lexer::T_END, "end"),
+
+      Belial::Lexer::Token.new(Belial::Lexer::LET, "let"),
+      Belial::Lexer::Token.new(Belial::Lexer::IDENT, "result"),
+      Belial::Lexer::Token.new(Belial::Lexer::ASSIGN, Belial::Lexer::ASSIGN),
+
+      Belial::Lexer::Token.new(Belial::Lexer::IDENT, "add"),
+      Belial::Lexer::Token.new(Belial::Lexer::LPAREN, Belial::Lexer::LPAREN),
+      Belial::Lexer::Token.new(Belial::Lexer::IDENT, "five"),
+      Belial::Lexer::Token.new(Belial::Lexer::COMMA, Belial::Lexer::COMMA),
+      Belial::Lexer::Token.new(Belial::Lexer::IDENT, "ten"),
+      Belial::Lexer::Token.new(Belial::Lexer::RPAREN, Belial::Lexer::RPAREN),
+
+      Belial::Lexer::Token.new(Belial::Lexer::EOF, "0"),
     ]
     lexical_analyzer = Belial::Lexer::LexicalAnalyzer.new(input)
     lexer = lexical_analyzer.createLexer
     tests.each do |test|
-      puts "token: #{test.type}, #{test.literal}"
       t = lexical_analyzer.nextToken
       assert_equal t.type, test.type
       assert_equal t.literal, test.literal

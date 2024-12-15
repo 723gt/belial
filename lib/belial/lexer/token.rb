@@ -4,7 +4,7 @@ module Belial
       attr_reader :type, :literal
       def initialize(type, literal)
         @type = type
-        @literal = literal
+        @literal = literal.to_s
       end
     end
   end

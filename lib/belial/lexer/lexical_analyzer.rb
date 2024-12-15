@@ -19,8 +19,15 @@ module Belial
     LBRACE = "{"
     RBRACE = "}"
 
-    FUNCTION = "FUNCTION"
+    METHOD = "METHOD"
+    T_END  = "END"
     LET      = "LET"
+
+    KEYWORD = {
+      "def" => METHOD,
+      "end" => T_END,
+      "let" => LET
+    }
     class LexicalAnalyzer
       def initialize(input)
         @input = input
@@ -43,7 +50,7 @@ module Belial
       end
 
       def nextToken
-        puts "nextToken: #{@lexer.ch}"
+        skipWhiteSpace
         case @lexer.ch
         when ASSIGN
           token = Token.new(ASSIGN, @lexer.ch)
@@ -63,9 +70,58 @@ module Belial
           token = Token.new(RBRACE, @lexer.ch)
         when 0
           token = Token.new(EOF, @lexer.ch)
+        else
+          if isLetter
+            identifier = readIdentifier
+            return Token.new(lookUPIdent(identifier), identifier)
+          elsif isDigit
+            return Token.new(INT, readNumber)
+          else
+            token = Token.new(ILLEGAL, @lexer.ch)
+          end
         end
         readChar
         return token
+      end
+
+      private
+
+      def readIdentifier
+        pos = @lexer.position
+        while isLetter
+          readChar
+        end
+        @lexer.input[pos...@lexer.position]
+      end
+
+      def readNumber
+        pos = @lexer.position
+        while isDigit
+          readChar
+        end
+        @lexer.input[pos...@lexer.position]
+      end
+
+      def isLetter
+        /\A[a-zA-Z\_]\z/ === @lexer.ch
+      end
+
+      def isDigit
+        /\A[0-9]\z/ === @lexer.ch
+      end
+
+      def lookUPIdent(identifier)
+        if KEYWORD[identifier]
+          return KEYWORD[identifier]
+        else
+          return IDENT
+        end
+      end
+
+      def skipWhiteSpace
+        while @lexer.ch == " " || @lexer.ch == "\t" || @lexer.ch == "\n" || @lexer.ch == "\r" do
+          readChar
+        end
       end
     end
   end
