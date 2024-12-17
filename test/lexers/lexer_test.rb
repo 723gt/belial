@@ -104,8 +104,6 @@ class LexicalAnalyzerTest < Minitest::Test
       Belial::Lexer::Token.new(Belial::Lexer::IDENT, "y"),
 
       Belial::Lexer::Token.new(Belial::Lexer::T_END, "end"),
-
-
     ]
     execute_test(input, tests)
   end
