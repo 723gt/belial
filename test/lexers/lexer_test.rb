@@ -78,6 +78,8 @@ class LexicalAnalyzerTest < Minitest::Test
 
       Belial::Lexer::Token.new(Belial::Lexer::BANG, Belial::Lexer::BANG),
       Belial::Lexer::Token.new(Belial::Lexer::IDENT, "x"),
+
+      Belial::Lexer::Token.new(Belial::Lexer::EOF, "0")
     ]
 
     execute_test(input, tests)
@@ -104,6 +106,8 @@ class LexicalAnalyzerTest < Minitest::Test
       Belial::Lexer::Token.new(Belial::Lexer::IDENT, "y"),
 
       Belial::Lexer::Token.new(Belial::Lexer::T_END, "end"),
+
+      Belial::Lexer::Token.new(Belial::Lexer::EOF, "0")
     ]
     execute_test(input, tests)
   end
@@ -126,6 +130,8 @@ class LexicalAnalyzerTest < Minitest::Test
       Belial::Lexer::Token.new(Belial::Lexer::ELSE, "else"),
       Belial::Lexer::Token.new(Belial::Lexer::FALSE, "false"),
       Belial::Lexer::Token.new(Belial::Lexer::T_END, "end"),
+
+      Belial::Lexer::Token.new(Belial::Lexer::EOF, "0")
     ]
     execute_test(input, tests)
   end
