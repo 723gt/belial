@@ -59,7 +59,7 @@ module Belial
         return @lexer
       end
 
-      def readChar()
+      def readChar
         if @lexer.read_position >= @lexer.input.length
           @lexer.ch = 0
         else
