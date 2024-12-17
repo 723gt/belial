@@ -11,8 +11,6 @@ class LexicalAnalyzerTest < Minitest::Test
             return x + y
             end
             let result = add(five, ten)
-            true
-            false
             1 < 2
             2 > 3
             c - d
@@ -24,6 +22,8 @@ class LexicalAnalyzerTest < Minitest::Test
             else
               false
             end
+            1 == 1
+            1 != 2
             '
 
     tests = [
@@ -95,6 +95,14 @@ class LexicalAnalyzerTest < Minitest::Test
       Belial::Lexer::Token.new(Belial::Lexer::ELSE, "else"),
       Belial::Lexer::Token.new(Belial::Lexer::FALSE, "false"),
       Belial::Lexer::Token.new(Belial::Lexer::T_END, "end"),
+
+      Belial::Lexer::Token.new(Belial::Lexer::INT, 1),
+      Belial::Lexer::Token.new(Belial::Lexer::EQ, "=="),
+      Belial::Lexer::Token.new(Belial::Lexer::INT, 1),
+
+      Belial::Lexer::Token.new(Belial::Lexer::INT, 1),
+      Belial::Lexer::Token.new(Belial::Lexer::NOT_EQ, "!="),
+      Belial::Lexer::Token.new(Belial::Lexer::INT, 2),
 
       Belial::Lexer::Token.new(Belial::Lexer::EOF, "0"),
     ]

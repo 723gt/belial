@@ -15,6 +15,9 @@ module Belial
     ASTERISK = "*"
     SLASH   = "/"
 
+    EQ = "=="
+    NOT_EQ = "!="
+
     LT = "<"
     GT = ">"
 
@@ -66,11 +69,24 @@ module Belial
         @lexer.read_position += 1
       end
 
+      def peekChar
+        if @lexer.read_position >= @lexer.input.length
+         return 0
+        else
+          return @lexer.input[@lexer.read_position]
+        end
+      end
+
       def nextToken
         skipWhiteSpace
         case @lexer.ch
         when ASSIGN
-          token = Token.new(ASSIGN, @lexer.ch)
+          if peekChar == "="
+            readChar
+            token = Token.new(EQ, EQ)
+          else
+            token = Token.new(ASSIGN, @lexer.ch)
+          end
         when SEMICOLON
           token = Token.new(SEMICOLON, @lexer.ch)
         when LPAREN
@@ -84,7 +100,12 @@ module Belial
         when MINUS
           token = Token.new(MINUS, @lexer.ch)
         when BANG
-          token = Token.new(BANG, @lexer.ch)
+          if peekChar == "="
+            readChar
+            token = Token.new(NOT_EQ, NOT_EQ)
+          else
+            token = Token.new(BANG, @lexer.ch)
+          end
         when ASTERISK
           token = Token.new(ASTERISK, @lexer.ch)
         when SLASH
