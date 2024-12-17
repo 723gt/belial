@@ -46,6 +46,8 @@ class LexicalAnalyzerTest < Minitest::Test
             1 == 1
             1 != 2
             !x
+            1 <= 2
+            2 >= 3
             '
     tests = [
       Belial::Lexer::Token.new(Belial::Lexer::INT, 1),
@@ -78,6 +80,16 @@ class LexicalAnalyzerTest < Minitest::Test
 
       Belial::Lexer::Token.new(Belial::Lexer::BANG, Belial::Lexer::BANG),
       Belial::Lexer::Token.new(Belial::Lexer::IDENT, "x"),
+
+      Belial::Lexer::Token.new(Belial::Lexer::INT, 1),
+      Belial::Lexer::Token.new(Belial::Lexer::LTQ, "<="),
+      Belial::Lexer::Token.new(Belial::Lexer::INT, 2),
+
+      Belial::Lexer::Token.new(Belial::Lexer::INT, 2),
+      Belial::Lexer::Token.new(Belial::Lexer::GTQ, ">="),
+      Belial::Lexer::Token.new(Belial::Lexer::INT, 3),
+
+
 
       Belial::Lexer::Token.new(Belial::Lexer::EOF, "0")
     ]

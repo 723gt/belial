@@ -21,6 +21,9 @@ module Belial
     LT = "<"
     GT = ">"
 
+    LTQ = "<="
+    GTQ = ">="
+
     COMMA   = ","
     SEMICOLON = ";"
 
@@ -111,9 +114,19 @@ module Belial
         when SLASH
           token = Token.new(SLASH, @lexer.ch)
         when LT
-          token = Token.new(LT, @lexer.ch)
+          if peekChar == '='
+            readChar
+            token = Token.new(LTQ, LTQ)
+          else
+            token = Token.new(LT, @lexer.ch)
+          end
         when GT
-          token = Token.new(GT, @lexer.ch)
+          if peekChar == '='
+            readChar
+            token = Token.new(GTQ, GTQ)
+          else
+            token = Token.new(GT, @lexer.ch)
+          end
         when LBRACE
           token = Token.new(LBRACE, @lexer.ch)
         when RBRACE
