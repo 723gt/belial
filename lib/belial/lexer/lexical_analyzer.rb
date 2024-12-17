@@ -10,6 +10,13 @@ module Belial
 
     ASSIGN  = "="
     PLUS    = "+"
+    MINUS   = "-"
+    BANG    = "!"
+    ASTERISK = "*"
+    SLASH   = "/"
+
+    LT = "<"
+    GT = ">"
 
     COMMA   = ","
     SEMICOLON = ";"
@@ -21,12 +28,22 @@ module Belial
 
     METHOD = "METHOD"
     T_END  = "END"
-    LET      = "LET"
+    LET    = "LET"
+    TRUE   = "TRUE"
+    FALSE  = "FALSE"
+    IF     = "IF"
+    ELSE   = "ELSE"
+    RETURN = "RETURN"
 
     KEYWORD = {
       "def" => METHOD,
       "end" => T_END,
-      "let" => LET
+      "let" => LET,
+      "if" => IF,
+      "else" => ELSE,
+      "true" => TRUE,
+      "false" => FALSE,
+      "return" => RETURN
     }
     class LexicalAnalyzer
       def initialize(input)
@@ -64,6 +81,18 @@ module Belial
           token = Token.new(COMMA, @lexer.ch)
         when PLUS
           token = Token.new(PLUS, @lexer.ch)
+        when MINUS
+          token = Token.new(MINUS, @lexer.ch)
+        when BANG
+          token = Token.new(BANG, @lexer.ch)
+        when ASTERISK
+          token = Token.new(ASTERISK, @lexer.ch)
+        when SLASH
+          token = Token.new(SLASH, @lexer.ch)
+        when LT
+          token = Token.new(LT, @lexer.ch)
+        when GT
+          token = Token.new(GT, @lexer.ch)
         when LBRACE
           token = Token.new(LBRACE, @lexer.ch)
         when RBRACE
