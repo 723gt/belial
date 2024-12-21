@@ -5,10 +5,12 @@ require './lib/belial/lexer/token'
 module Belial
   module Parser
     class Parser
+      attr_reader :errors
       def initialize(lexical_analyzer)
         @lexer = lexical_analyzer
         @current_token = nil
         @peek_token = nil
+        @errors = []
 
         next_token
         next_token
@@ -73,8 +75,13 @@ module Belial
           next_token
           return true
         else
+          peek_error(type)
           return false
         end
+      end
+
+      def peek_error(type)
+        @errors << "expected next token to be #{type}, got #{@peek_token.literal} instead"
       end
     end
   end

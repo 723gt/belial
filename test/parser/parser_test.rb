@@ -31,6 +31,33 @@ class ParserTest < Minitest::Test
     end
   end
 
+  def test_error_parse
+    input = 'let x 5
+             let = 10
+             let 83381
+            '
+    tests = [
+      {"need_token"=> "=",  "error_literal" => "5"},
+      {"need_token"=> "IDENT",  "error_literal" => "="},
+      {"need_token"=> "IDENT",  "error_literal" => "83381"},
+    ]
+    lexical_analyzer = Belial::Lexer::LexicalAnalyzer.new(input)
+    parser = Belial::Parser::Parser.new(lexical_analyzer)
+    program = parser.parser_program
+    errors = parser.errors
+
+    if errors.size.zero?
+      raise "errors is empty"
+    end
+    assert_equal(errors.size, 3)
+
+    tests.each_with_index do |t, i|
+      message = "expected next token to be #{t["need_token"]}, got #{t["error_literal"]} instead"
+      assert_equal(errors[i], message)
+    end
+
+  end
+
   def t_statement(stm, val)
     if stm.token_literal != "let"
       raise "not statement let, got #{stm.token_literal}"
