@@ -23,7 +23,7 @@ module Belial
 
       def parser_program
         program = Belial::Parser::ATS::Program.new
-        while @current_token.type != Belial::Lexer::EOF
+        while !is_a_current_token?(Belial::Lexer::EOF)
           stm = parser_statement
           if !stm.nil?
             program.add_statement(stm)
