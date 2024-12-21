@@ -77,7 +77,7 @@ module Belial
         end
       end
 
-      def nextToken
+      def next_token
         skipWhiteSpace
         case @lexer.ch
         when ASSIGN

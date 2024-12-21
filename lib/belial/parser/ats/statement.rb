@@ -1,3 +1,4 @@
+require './lib/belial/parser/ats/node'
 module Belial
   module Parser
     module ATS

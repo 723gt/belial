@@ -4,15 +4,15 @@ require './lib/belial/lexer/lexical_analyzer.rb'
 
 class ParserTest < Minitest::Test
   def test_parser
-    input = 'let five = 5;
-             let ten = 10;
+    input = 'let x = 5;
+             let y  = 10;
              let foobar = 83381;
             '
 
     tests = [
-      {"identifier" => "x"},
-      {"identifier" => "y"},
-      {"identifier" => "foobar"},
+      'x',
+      'y',
+      'foobar'
     ]
     lexical_analyzer = Belial::Lexer::LexicalAnalyzer.new(input)
     parser = Belial::Parser::Parser.new(lexical_analyzer)
@@ -25,27 +25,27 @@ class ParserTest < Minitest::Test
       raise "statement error dose not contain 3 statements, got #{program.statements.size}"
     end
 
-    tests.each_with_index do |test, i|
+    tests.each_with_index do |t, i|
       statement = program.statements[i]
-      assert_true(test_statement(test, statement, test))
+      assert_equal(t_statement(statement, t), true)
     end
   end
 
-  def test_statement(test, statement, value)
-    if statement.token_literal != "let"
-      raise "not statement let, got #{statement.token_literal}"
+  def t_statement(stm, val)
+    if stm.token_literal != "let"
+      raise "not statement let, got #{stm.token_literal}"
     end
 
-    if statement.nil?
+    if stm.nil?
       raise "statement is nil"
     end
 
-    if statement.name.value != value
-      raise "statement name is not #{value}, got #{statement.name.value}"
+    if stm.name.value != val
+      raise "statement name is not #{val}, got #{stm.name.value}"
     end
 
-    if statement.name.token_literal != value
-      raise "statement name is not #{value}, got #{statement.name.token_literal}"
+    if stm.name.token_literal != val
+      raise "statement name is not #{val}, got #{stm.name.token_literal}"
     end
     return true
   end
