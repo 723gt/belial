@@ -7,6 +7,7 @@ module Belial
     class Parser
       attr_reader :errors
       def initialize(lexical_analyzer)
+        @program = Belial::Parser::ATS::Program.new
         @lexer = lexical_analyzer
         @current_token = nil
         @peek_token = nil
@@ -21,16 +22,15 @@ module Belial
         @peek_token = @lexer.next_token
       end
 
-      def parser_program
-        program = Belial::Parser::ATS::Program.new
+      def parse
         while !is_a_current_token?(Belial::Lexer::EOF)
           stm = parser_statement
           if !stm.nil?
-            program.add_statement(stm)
+            @program.add_statement(stm)
           end
           next_token
         end
-        return program
+        return @program
       end
 
       def parser_statement

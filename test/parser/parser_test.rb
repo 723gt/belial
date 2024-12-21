@@ -16,7 +16,7 @@ class ParserTest < Minitest::Test
     ]
     lexical_analyzer = Belial::Lexer::LexicalAnalyzer.new(input)
     parser = Belial::Parser::Parser.new(lexical_analyzer)
-    program = parser.parser_program
+    program = parser.parse
     if program.nil?
       raise "program is nil"
     end
@@ -43,7 +43,7 @@ class ParserTest < Minitest::Test
     ]
     lexical_analyzer = Belial::Lexer::LexicalAnalyzer.new(input)
     parser = Belial::Parser::Parser.new(lexical_analyzer)
-    program = parser.parser_program
+    program = parser.parse
     errors = parser.errors
 
     if errors.size.zero?
