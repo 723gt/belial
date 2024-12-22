@@ -1,5 +1,6 @@
 require './lib/belial/parser/ats/program'
 require './lib/belial/parser/ats/let_statement'
+require './lib/belial/parser/ats/return_statement'
 require './lib/belial/parser/ats/identifier'
 require './lib/belial/lexer/token'
 module Belial
@@ -37,6 +38,8 @@ module Belial
         case @current_token.type
         when Belial::Lexer::LET
           return parser_let_statement
+        when Belial::Lexer::RETURN
+          return parser_return_statement
         else
           return nil
         end
@@ -60,6 +63,16 @@ module Belial
         end
         # TODO: valueを一旦空文字列
         Belial::Parser::ATS::LetStatement.new(token, name, '')
+      end
+
+      def parser_return_statement
+        token = @current_token
+        next_token
+        while is_a_current_token?(Belial::Lexer::SEMICOLON)
+          next_token
+        end
+        # TODO: valueを一旦空文字列
+        Belial::Parser::ATS::ReturnStatement.new(token,'')
       end
 
       def is_a_current_token?(type)

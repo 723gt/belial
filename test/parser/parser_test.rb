@@ -55,7 +55,34 @@ class ParserTest < Minitest::Test
       message = "expected next token to be #{t["need_token"]}, got #{t["error_literal"]} instead"
       assert_equal(errors[i], message)
     end
+  end
 
+  def test_return_statement
+    input = 'return 5;
+             return 10;
+             return 993322;
+            '
+
+    tests = [
+      5,
+      10,
+      993322
+    ]
+    lexical_analyzer = Belial::Lexer::LexicalAnalyzer.new(input)
+    parser = Belial::Parser::Parser.new(lexical_analyzer)
+    program = parser.parse
+    if program.nil?
+      raise "program is nil"
+    end
+
+    if program.statements.size != 3
+      raise "statement error dose not contain 3 statements, got #{program.statements.size}"
+    end
+
+    tests.each_with_index do |t, i|
+      statement = program.statements[i]
+      assert_equal(statement.token_literal, "return")
+    end
   end
 
   def t_statement(stm, val)
