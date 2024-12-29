@@ -1,10 +1,18 @@
 require './lib/belial/parser/ats/program'
 require './lib/belial/parser/ats/let_statement'
 require './lib/belial/parser/ats/return_statement'
+require './lib/belial/parser/ats/expression_statement'
 require './lib/belial/parser/ats/identifier'
 require './lib/belial/lexer/token'
 module Belial
   module Parser
+    LOWEST = 1
+    EQUALS = 2  # ==
+    LESSGREATER = 3 # > or <
+    SUM = 4 # +
+    PRODUCT = 5 # *
+    PREFIX = 6 # -X or !X
+    CALL = 7 # myFunction(X)
     class Parser
       attr_reader :errors
       def initialize(lexical_analyzer)
@@ -13,6 +21,10 @@ module Belial
         @current_token = nil
         @peek_token = nil
         @errors = []
+        @prefix_parse_fnc = {}
+        @infix_parse_fnc = {}
+
+        register_prefix(Belial::Lexer::IDENT, :parser_identifier)
 
         next_token
         next_token
@@ -41,11 +53,12 @@ module Belial
         when Belial::Lexer::RETURN
           return parser_return_statement
         else
-          return nil
+          return parser_expression_statement
         end
       end
 
       private
+      # letのパース
       def parser_let_statement
         token = @current_token
         if !expect_peek(Belial::Lexer::IDENT)
@@ -65,6 +78,7 @@ module Belial
         Belial::Parser::ATS::LetStatement.new(token, name, '')
       end
 
+      # returnのパース
       def parser_return_statement
         token = @current_token
         next_token
@@ -73,6 +87,29 @@ module Belial
         end
         # TODO: valueを一旦空文字列
         Belial::Parser::ATS::ReturnStatement.new(token,'')
+      end
+
+      # 式文のパース
+      def parser_expression_statement
+        token = @current_token
+        expression = parser_expression(LOWEST)
+        if is_a_peek_token?(Belial::Lexer::SEMICOLON)
+          next_token
+        end
+        Belial::Parser::ATS::ExpressionStatement.new(token, expression)
+      end
+
+      def parser_expression(precedence)
+        prefix = @prefix_parse_fnc[@current_token.type]
+        if prefix.nil?
+          return nil
+        end
+        left_expression = send(prefix)
+        return left_expression
+      end
+
+      def parser_identifier
+        Belial::Parser::ATS::Identifier.new(@current_token, @current_token.literal)
       end
 
       def is_a_current_token?(type)
@@ -95,6 +132,14 @@ module Belial
 
       def peek_error(type)
         @errors << "expected next token to be #{type}, got #{@peek_token.literal} instead"
+      end
+
+      def register_prefix(token_type, fnc_symbol)
+        @prefix_parse_fnc[token_type] = fnc_symbol
+      end
+
+      def register_infix(token_type, fnc_symbol)
+        @infix_parse_fnc[token_type] = fnc_symbol
       end
     end
   end

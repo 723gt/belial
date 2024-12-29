@@ -5,6 +5,10 @@ module Belial
         def token_literal
           raise NotImplementedError
         end
+
+        def to_string
+          raise NotImplementedError
+        end
       end
     end
   end

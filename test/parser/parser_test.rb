@@ -85,6 +85,23 @@ class ParserTest < Minitest::Test
     end
   end
 
+  def test_identifier_expression
+    input = 'foobar;'
+
+    lexical_analyzer = Belial::Lexer::LexicalAnalyzer.new(input)
+    parser = Belial::Parser::Parser.new(lexical_analyzer)
+    program = parser.parse
+
+    assert_equal(program.statements.size, 1)
+    statement = program.statements[0]
+    if statement.nil?
+      raise "statement is nil"
+    end
+    ident = statement.expression
+    assert_equal(ident.token_literal, "foobar")
+    assert_equal(ident.value, "foobar")
+  end
+
   def t_statement(stm, val)
     if stm.token_literal != "let"
       raise "not statement let, got #{stm.token_literal}"
