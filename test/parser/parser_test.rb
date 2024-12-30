@@ -98,6 +98,7 @@ class ParserTest < Minitest::Test
       raise "statement is nil"
     end
     ident = statement.expression
+    puts ident.token_literal
     assert_equal(ident.token_literal, "foobar")
     assert_equal(ident.value, "foobar")
   end
