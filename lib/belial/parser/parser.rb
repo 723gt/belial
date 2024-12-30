@@ -2,8 +2,12 @@ require './lib/belial/parser/ats/program'
 require './lib/belial/parser/ats/let_statement'
 require './lib/belial/parser/ats/return_statement'
 require './lib/belial/parser/ats/expression_statement'
-require './lib/belial/parser/ats/identifier'
+
+require './lib/belial/parser/ats/asserts/identifier'
+require './lib/belial/parser/ats/asserts/integer_literal'
+
 require './lib/belial/lexer/token'
+
 module Belial
   module Parser
     LOWEST = 1
@@ -13,6 +17,7 @@ module Belial
     PRODUCT = 5 # *
     PREFIX = 6 # -X or !X
     CALL = 7 # myFunction(X)
+
     class Parser
       attr_reader :errors
       def initialize(lexical_analyzer)
@@ -25,6 +30,7 @@ module Belial
         @infix_parse_fnc = {}
 
         register_prefix(Belial::Lexer::IDENT, :parser_identifier)
+        register_prefix(Belial::Lexer::INT, :parse_integer_literal)
 
         next_token
         next_token
@@ -97,6 +103,18 @@ module Belial
           next_token
         end
         Belial::Parser::ATS::ExpressionStatement.new(token, expression)
+      end
+
+      def parse_integer_literal
+        token = @current_token
+        begin
+          value = Integer(@current_token.literal)
+        rescue ArgumentError  => e
+          message = "could not parse #{token.literal} as integer"
+          @errors << message
+          return nil
+        end
+        Belial::Parser::ATS::IntegerLiteral.new(token, value)
       end
 
       def parser_expression(precedence)
