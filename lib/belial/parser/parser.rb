@@ -29,7 +29,7 @@ module Belial
         @prefix_parse_fnc = {}
         @infix_parse_fnc = {}
 
-        register_prefix(Belial::Lexer::IDENT, :parser_identifier)
+        register_prefix(Belial::Lexer::IDENT, :parse_identifier)
         register_prefix(Belial::Lexer::INT, :parse_integer_literal)
 
         next_token
@@ -43,7 +43,7 @@ module Belial
 
       def parse
         while !is_a_current_token?(Belial::Lexer::EOF)
-          stm = parser_statement
+          stm = parse_statement
           if !stm.nil?
             @program.add_statement(stm)
           end
@@ -52,20 +52,20 @@ module Belial
         return @program
       end
 
-      def parser_statement
+      def parse_statement
         case @current_token.type
         when Belial::Lexer::LET
-          return parser_let_statement
+          return parse_let_statement
         when Belial::Lexer::RETURN
-          return parser_return_statement
+          return parse_return_statement
         else
-          return parser_expression_statement
+          return parse_expression_statement
         end
       end
 
       private
       # letのパース
-      def parser_let_statement
+      def parse_let_statement
         token = @current_token
         if !expect_peek(Belial::Lexer::IDENT)
           return nil
@@ -85,7 +85,7 @@ module Belial
       end
 
       # returnのパース
-      def parser_return_statement
+      def parse_return_statement
         token = @current_token
         next_token
         while is_a_current_token?(Belial::Lexer::SEMICOLON)
@@ -96,9 +96,9 @@ module Belial
       end
 
       # 式文のパース
-      def parser_expression_statement
+      def parse_expression_statement
         token = @current_token
-        expression = parser_expression(LOWEST)
+        expression = parse_expression(LOWEST)
         if is_a_peek_token?(Belial::Lexer::SEMICOLON)
           next_token
         end
@@ -117,7 +117,7 @@ module Belial
         Belial::Parser::ATS::IntegerLiteral.new(token, value)
       end
 
-      def parser_expression(precedence)
+      def parse_expression(precedence)
         prefix = @prefix_parse_fnc[@current_token.type]
         if prefix.nil?
           return nil
@@ -126,7 +126,7 @@ module Belial
         return left_expression
       end
 
-      def parser_identifier
+      def parse_identifier
         Belial::Parser::ATS::Identifier.new(@current_token, @current_token.literal)
       end
 
