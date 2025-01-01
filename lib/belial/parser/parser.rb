@@ -2,6 +2,7 @@ require './lib/belial/parser/ats/program'
 require './lib/belial/parser/ats/let_statement'
 require './lib/belial/parser/ats/return_statement'
 require './lib/belial/parser/ats/expression_statement'
+require './lib/belial/parser/ats/prefix_expression'
 
 require './lib/belial/parser/ats/asserts/identifier'
 require './lib/belial/parser/ats/asserts/integer_literal'
@@ -18,6 +19,10 @@ module Belial
     PREFIX = 6 # -X or !X
     CALL = 7 # myFunction(X)
 
+    IDENTIFIER_EXPRESSION = :parse_identifier
+    INTEGER_EXPRESSION = :parse_integer_literal
+    PREFIX_EXPRESSION = :parse_prefix_expression
+
     class Parser
       attr_reader :errors
       def initialize(lexical_analyzer)
@@ -29,8 +34,7 @@ module Belial
         @prefix_parse_fnc = {}
         @infix_parse_fnc = {}
 
-        register_prefix(Belial::Lexer::IDENT, :parse_identifier)
-        register_prefix(Belial::Lexer::INT, :parse_integer_literal)
+        init_prefix
 
         next_token
         next_token
@@ -105,6 +109,15 @@ module Belial
         Belial::Parser::ATS::ExpressionStatement.new(token, expression)
       end
 
+      # 前置式のパース
+      def parse_prefix_expression
+        token = @current_token
+        operator = @current_token.literal
+        next_token
+        right = parse_expression(PREFIX)
+        Belial::Parser::ATS::PrefixExpression.new(token, operator, right)
+      end
+
       def parse_integer_literal
         token = @current_token
         begin
@@ -120,6 +133,7 @@ module Belial
       def parse_expression(precedence)
         prefix = @prefix_parse_fnc[@current_token.type]
         if prefix.nil?
+          no_prefix_parse_fnc_error(@current_token.type)
           return nil
         end
         left_expression = send(prefix)
@@ -158,6 +172,18 @@ module Belial
 
       def register_infix(token_type, fnc_symbol)
         @infix_parse_fnc[token_type] = fnc_symbol
+      end
+
+      def no_prefix_parse_fnc_error(token_type)
+        msg = "no prefix parse function for #{token_type} found"
+        @errors << msg
+      end
+
+      def init_prefix
+        register_prefix(Belial::Lexer::IDENT, IDENTIFIER_EXPRESSION)
+        register_prefix(Belial::Lexer::INT, INTEGER_EXPRESSION)
+        register_prefix(Belial::Lexer::BANG, PREFIX_EXPRESSION)
+        register_prefix(Belial::Lexer::MINUS, PREFIX_EXPRESSION)
       end
     end
   end
