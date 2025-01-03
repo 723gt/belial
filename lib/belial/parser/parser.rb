@@ -3,11 +3,13 @@ require './lib/belial/parser/ats/let_statement'
 require './lib/belial/parser/ats/return_statement'
 require './lib/belial/parser/ats/expression_statement'
 require './lib/belial/parser/ats/prefix_expression'
+require './lib/belial/parser/ats/infix_expression'
 
 require './lib/belial/parser/ats/asserts/identifier'
 require './lib/belial/parser/ats/asserts/integer_literal'
 
 require './lib/belial/lexer/token'
+require './lib/belial/lexer/lexical_analyzer.rb'
 
 module Belial
   module Parser
@@ -22,6 +24,18 @@ module Belial
     IDENTIFIER_EXPRESSION = :parse_identifier
     INTEGER_EXPRESSION = :parse_integer_literal
     PREFIX_EXPRESSION = :parse_prefix_expression
+    INFIX_EXPRESSION = :parse_infix_expression
+
+    PRECEDENCES = {
+      Belial::Lexer::EQ => EQUALS,
+      Belial::Lexer::NOT_EQ => EQUALS,
+      Belial::Lexer::LT => LESSGREATER,
+      Belial::Lexer::GT => LESSGREATER,
+      Belial::Lexer::PLUS => SUM,
+      Belial::Lexer::MINUS => SUM,
+      Belial::Lexer::ASTERISK => PRODUCT,
+      Belial::Lexer::SLASH => PRODUCT,
+    }
 
     class Parser
       attr_reader :errors
@@ -35,6 +49,7 @@ module Belial
         @infix_parse_fnc = {}
 
         init_prefix
+        init_infix
 
         next_token
         next_token
@@ -118,6 +133,16 @@ module Belial
         Belial::Parser::ATS::PrefixExpression.new(token, operator, right)
       end
 
+      # 中置式のパース
+      def parse_infix_expression(left)
+        token = @current_token
+        operator = @current_token.literal
+        precedence = current_precedence
+        next_token
+        right = parse_expression(precedence)
+        Belial::Parser::ATS::InfixExpression.new(token, left, operator, right)
+      end
+
       def parse_integer_literal
         token = @current_token
         begin
@@ -137,6 +162,14 @@ module Belial
           return nil
         end
         left_expression = send(prefix)
+        while !is_a_peek_token?(Belial::Lexer::SEMICOLON) && precedence < peek_precedence
+          infix = @infix_parse_fnc[@peek_token.type]
+          if infix.nil?
+            return left_expression
+          end
+          next_token
+          left_expression = send(infix, left_expression)
+        end
         return left_expression
       end
 
@@ -162,6 +195,22 @@ module Belial
         end
       end
 
+      def peek_precedence
+        precedence = PRECEDENCES[@peek_token.type]
+        if precedence.nil?
+          return LOWEST
+        end
+        return precedence
+      end
+
+      def current_precedence
+        precedence = PRECEDENCES[@current_token.type]
+        if precedence.nil?
+          return LOWEST
+        end
+        return precedence
+      end
+
       def peek_error(type)
         @errors << "expected next token to be #{type}, got #{@peek_token.literal} instead"
       end
@@ -184,6 +233,12 @@ module Belial
         register_prefix(Belial::Lexer::INT, INTEGER_EXPRESSION)
         register_prefix(Belial::Lexer::BANG, PREFIX_EXPRESSION)
         register_prefix(Belial::Lexer::MINUS, PREFIX_EXPRESSION)
+      end
+
+      def init_infix
+        PRECEDENCES.each do |k, _v|
+          register_infix(k, INFIX_EXPRESSION)
+        end
       end
     end
   end

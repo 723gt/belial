@@ -15,6 +15,10 @@ module Belial
         def token_literal
           @token.literal
         end
+
+        def to_string
+          "(#{operator}#{right.to_string})"
+        end
       end
     end
   end
