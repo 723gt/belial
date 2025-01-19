@@ -150,9 +150,9 @@ class LexicalAnalyzerTest < Minitest::Test
 
   def execute_test(input, tests)
     lexical_analyzer = Belial::Lexer::LexicalAnalyzer.new(input)
-    lexer = lexical_analyzer.createLexer
+    lexer = lexical_analyzer.lexer
     tests.each do |test|
-      t = lexical_analyzer.nextToken
+      t = lexical_analyzer.next_token
       assert_equal t.type, test.type
       assert_equal t.literal, test.literal
     end

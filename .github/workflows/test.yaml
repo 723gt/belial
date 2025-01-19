@@ -1,4 +1,4 @@
-name: Lexer Test
+name: Test
 
 on:
   pull_request:
@@ -24,4 +24,5 @@ jobs:
 
       - name: Run lexer test
         run: |
-          ruby test/lexers/lexer_test.rb
+          ruby test/lexers/lexer_test.rb \
+          ruby test/parser/parser_test.rb

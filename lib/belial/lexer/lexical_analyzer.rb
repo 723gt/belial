@@ -52,14 +52,11 @@ module Belial
       "return" => RETURN
     }
     class LexicalAnalyzer
+      attr_reader :lexer
       def initialize(input)
         @input = input
-      end
-
-      def createLexer
         @lexer = Lexer.new(@input)
         readChar
-        return @lexer
       end
 
       def readChar
@@ -80,7 +77,7 @@ module Belial
         end
       end
 
-      def nextToken
+      def next_token
         skipWhiteSpace
         case @lexer.ch
         when ASSIGN
