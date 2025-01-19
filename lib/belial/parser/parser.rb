@@ -4,6 +4,7 @@ require './lib/belial/parser/ats/return_statement'
 require './lib/belial/parser/ats/expression_statement'
 require './lib/belial/parser/ats/prefix_expression'
 require './lib/belial/parser/ats/infix_expression'
+require './lib/belial/parser/ats/boolean_expression'
 
 require './lib/belial/parser/ats/asserts/identifier'
 require './lib/belial/parser/ats/asserts/integer_literal'
@@ -25,6 +26,7 @@ module Belial
     INTEGER_EXPRESSION = :parse_integer_literal
     PREFIX_EXPRESSION = :parse_prefix_expression
     INFIX_EXPRESSION = :parse_infix_expression
+    BOOLEAN_EXPRESSION = :parse_boolean
 
     PRECEDENCES = {
       Belial::Lexer::EQ => EQUALS,
@@ -177,6 +179,10 @@ module Belial
         Belial::Parser::ATS::Identifier.new(@current_token, @current_token.literal)
       end
 
+      def parse_boolean
+        Belial::Parser::ATS::BooleanExpression.new(@current_token, is_a_current_token?(Belial::Lexer::TRUE))
+      end
+
       def is_a_current_token?(type)
         @current_token.type == type
       end
@@ -233,6 +239,8 @@ module Belial
         register_prefix(Belial::Lexer::INT, INTEGER_EXPRESSION)
         register_prefix(Belial::Lexer::BANG, PREFIX_EXPRESSION)
         register_prefix(Belial::Lexer::MINUS, PREFIX_EXPRESSION)
+        register_prefix(Belial::Lexer::TRUE, BOOLEAN_EXPRESSION)
+        register_prefix(Belial::Lexer::FALSE, BOOLEAN_EXPRESSION)
       end
 
       def init_infix
