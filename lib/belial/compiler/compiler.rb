@@ -12,11 +12,18 @@ module Belial
         "+" => :add,
         "-" => :sub,
         "*" => :mul,
-        "/" => :div
+        "/" => :div,
+        "==" => :eq,
+        "!=" => :neq,
+        "<" => :lt,
+        ">" => :gt,
+        "<=" => :le,
+        ">=" => :ge
       }
 
       PREFIX_INSNS = {
-        "-" => :neg
+        "-" => :neg,
+        "!" => :not
       }
 
       def compile(program)
@@ -44,6 +51,14 @@ module Belial
         case node
         when AST::IntLit
           @iseq.emit(:putobject, node.value)
+        when AST::BoolLit
+          @iseq.emit(:putobject, node.value)
+        when AST::NilLit
+          @iseq.emit(:putnil)
+        when AST::LocalVar
+          @iseq.emit(:getlocal, @iseq.local_index(node.name))
+        when AST::Assign
+          compile_assign(node)
         when AST::Infix
           insn = INFIX_INSNS[node.op] or unsupported(node)
           compile_node(node.left)
@@ -53,9 +68,66 @@ module Belial
           insn = PREFIX_INSNS[node.op] or unsupported(node)
           compile_node(node.operand)
           @iseq.emit(insn)
+        when AST::If
+          compile_if(node)
+        when AST::While
+          compile_while(node)
         else
           unsupported(node)
         end
+      end
+
+      # 代入も式なので、代入した値をスタックに残す（dup してから setlocal）
+      def compile_assign(node)
+        # 右辺より先にスロットを割り当てる（x = x の右辺の x もこのスロットを読む）
+        index = @iseq.local_index(node.name)
+        compile_node(node.value)
+        @iseq.emit(:dup)
+        @iseq.emit(:setlocal, index)
+      end
+
+      #   cond
+      #   branchunless ELSE1
+      #   then_body
+      #   jump END
+      # ELSE1:
+      #   elsif の cond / branchunless ELSE2 / body / jump END
+      # ELSE2:
+      #   else_body（なければ putnil）
+      # END:
+      def compile_if(node)
+        branches = [[node.cond, node.then_body], *node.elsifs]
+        end_jumps = []
+
+        branches.each do |cond, body|
+          compile_node(cond)
+          branch = @iseq.emit(:branchunless, nil)
+          compile_body(body)
+          end_jumps << @iseq.emit(:jump, nil)
+          @iseq.patch(branch, @iseq.next_index)
+        end
+
+        compile_body(node.else_body || [])
+        end_jumps.each { |jump| @iseq.patch(jump, @iseq.next_index) }
+      end
+
+      # COND:
+      #   cond
+      #   branchunless END
+      #   body
+      #   pop
+      #   jump COND
+      # END:
+      #   putnil（while 自体の値は nil）
+      def compile_while(node)
+        cond_index = @iseq.next_index
+        compile_node(node.cond)
+        branch = @iseq.emit(:branchunless, nil)
+        compile_body(node.body)
+        @iseq.emit(:pop)
+        @iseq.emit(:jump, cond_index)
+        @iseq.patch(branch, @iseq.next_index)
+        @iseq.emit(:putnil)
       end
 
       def unsupported(node)

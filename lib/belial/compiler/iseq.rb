@@ -10,8 +10,26 @@ module Belial
         super(name, params, locals, insns)
       end
 
+      # 命令を追加し、その命令の番号を返す
       def emit(opcode, *operands)
         insns << [opcode, *operands]
+        insns.size - 1
+      end
+
+      # 次に追加される命令の番号（ジャンプ先として使う）
+      def next_index
+        insns.size
+      end
+
+      # 先に出しておいたジャンプ命令（jump / branchunless）の飛び先を後から埋める
+      def patch(index, addr)
+        insns[index][1] = addr
+      end
+
+      # ローカル変数のスロット番号。初めての名前なら新しいスロットを割り当てる
+      def local_index(name)
+        locals << name unless locals.include?(name)
+        locals.index(name)
       end
 
       # 命令列を読める形の文字列にする

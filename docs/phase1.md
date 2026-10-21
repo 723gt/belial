@@ -214,19 +214,37 @@ end
 ```
 
 ```
- 0: putobject 1
- 1: setlocal 0          # a
- 2: getlocal 0
- 3: putobject 2
- 4: lt
- 5: branchunless 9
- 6: putobject "small"
- 7: send :puts, 1
- 8: jump 10
- 9: putnil
-10: pop
-11: putnil
-12: leave
+== main
+0000 putobject 1
+0001 dup
+0002 setlocal 0        # a
+0003 pop
+0004 getlocal 0
+0005 putobject 2
+0006 lt
+0007 branchunless 11
+0008 putobject "small"
+0009 send :puts 1
+0010 jump 12
+0011 putnil
+0012 leave
+```
+
+- 代入も式なので、値を `dup` してから `setlocal` する。文の値として使わなければ直後の `pop` で捨てる。
+- `if` / `while` のジャンプ先は、先に `nil` で命令を出しておき、飛び先が決まったら埋める（バックパッチ）。
+- `else` のない `if` で条件が偽のときの値は `nil`。`while` 自体の値は常に `nil`。
+
+`while` は次の形になる。
+
+```
+COND:
+  条件
+  branchunless END
+  本体
+  pop
+  jump COND
+END:
+  putnil
 ```
 
 ## VM
@@ -239,7 +257,9 @@ end
 - `-d` オプションで命令ごとのスタックを表示する（既存 VM のデバッグモードと同じ）。
 - `--disasm` オプションで ISeq を表示する（`ISeq#disasm`）。
 - 整数の割り算は Ruby と同じく負の無限大方向に切り捨てる（`-7 / 2` は `-4`）。
-- 0 での割り算や、整数以外への算術演算は `Belial::VM::VMError` で停止する。
+- `==` / `!=` はどの値どうしでも比べられる（`1 == true` は false）。
+  `< > <= >=` と算術演算は整数どうしのみ。
+- 0 での割り算や、整数以外への算術演算・大小比較は `Belial::VM::VMError` で停止する。
 - まだコンパイルできないノードは `Belial::Compiler::CompileError`（例: `Assign is not supported yet`）。
 
 ### 呼び出し口
@@ -255,7 +275,7 @@ Belial.run(source, debug: false)    # => 最後に評価した式の値
 - [x] 1. lexer の完成（上記の変更点）とテストの更新
 - [x] 2. パーサと AST（式 → 代入 → `if` / `while` → `def` / 呼び出し → 括弧なし呼び出し）
 - [x] 3. コンパイラと VM: 整数の四則演算
-- [ ] 4. 変数、比較、`if` / `while`
+- [x] 4. 変数、比較、`if` / `while`
 - [ ] 5. メソッド定義・呼び出し・`return`・再帰
 - [ ] 6. 文字列・配列・組み込み関数、実行コマンド `bin/belial` と REPL
 - [x] 7. 既存の YARV 実行器を `lib/belial/yarv/` へ移動（`Belial::YARV::VM`。新しい VM と名前がぶつかるため 3 と一緒に実施）

@@ -13,6 +13,13 @@ module Belial
         div: :/
       }
 
+      COMPARISON = {
+        lt: :<,
+        gt: :>,
+        le: :<=,
+        ge: :>=
+      }
+
       attr_reader :stack
 
       def initialize(iseq, debug: false)
@@ -38,14 +45,36 @@ module Belial
             push nil
           when :pop
             pop
+          when :dup
+            push @stack.last
+          when :getlocal
+            push @stack[frame.bp + operands[0]]
+          when :setlocal
+            @stack[frame.bp + operands[0]] = pop
           when :add, :sub, :mul, :div
             right = pop
             left = pop
             push arithmetic(opcode, left, right)
+          when :eq, :neq
+            right = pop
+            left = pop
+            push(opcode == :eq ? left == right : left != right)
+          when :lt, :gt, :le, :ge
+            right = pop
+            left = pop
+            op = COMPARISON[opcode]
+            check_integer(op, left, right)
+            push left.send(op, right)
           when :neg
             value = pop
             check_integer("-", value)
             push(-value)
+          when :not
+            push !truthy?(pop)
+          when :jump
+            frame.pc = operands[0]
+          when :branchunless
+            frame.pc = operands[0] unless truthy?(pop)
           when :leave
             value = pop
             finished = @frames.pop
@@ -76,6 +105,11 @@ module Belial
         bp = @stack.size
         iseq.locals.size.times { push nil }
         @frames.push(Frame.new(iseq, 0, bp))
+      end
+
+      # Ruby と同じく false と nil だけが偽
+      def truthy?(value)
+        !(value.nil? || value == false)
       end
 
       def arithmetic(opcode, left, right)
