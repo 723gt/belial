@@ -237,14 +237,25 @@ end
 - `send` は ユーザー定義メソッド → 組み込み関数 の順に名前を探す。
 - `leave` で戻り値を取り出し、スタックを `bp` まで巻き戻して戻り値を積み直す。
 - `-d` オプションで命令ごとのスタックを表示する（既存 VM のデバッグモードと同じ）。
-- `--disasm` オプションで ISeq を表示する。
+- `--disasm` オプションで ISeq を表示する（`ISeq#disasm`）。
+- 整数の割り算は Ruby と同じく負の無限大方向に切り捨てる（`-7 / 2` は `-4`）。
+- 0 での割り算や、整数以外への算術演算は `Belial::VM::VMError` で停止する。
+- まだコンパイルできないノードは `Belial::Compiler::CompileError`（例: `Assign is not supported yet`）。
+
+### 呼び出し口
+
+```ruby
+require_relative 'lib/belial'
+Belial.compile(source)              # => ISeq
+Belial.run(source, debug: false)    # => 最後に評価した式の値
+```
 
 ## 実装ステップ
 
-1. lexer の完成（上記の変更点）とテストの更新
-2. パーサと AST（式 → 代入 → `if` / `while` → `def` / 呼び出し → 括弧なし呼び出し）
-3. コンパイラと VM: 整数の四則演算
-4. 変数、比較、`if` / `while`
-5. メソッド定義・呼び出し・`return`・再帰
-6. 文字列・配列・組み込み関数、実行コマンド `bin/belial` と REPL
-7. 既存の YARV 実行器を `lib/belial/yarv/` へ移動
+- [x] 1. lexer の完成（上記の変更点）とテストの更新
+- [x] 2. パーサと AST（式 → 代入 → `if` / `while` → `def` / 呼び出し → 括弧なし呼び出し）
+- [x] 3. コンパイラと VM: 整数の四則演算
+- [ ] 4. 変数、比較、`if` / `while`
+- [ ] 5. メソッド定義・呼び出し・`return`・再帰
+- [ ] 6. 文字列・配列・組み込み関数、実行コマンド `bin/belial` と REPL
+- [x] 7. 既存の YARV 実行器を `lib/belial/yarv/` へ移動（`Belial::YARV::VM`。新しい VM と名前がぶつかるため 3 と一緒に実施）
