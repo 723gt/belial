@@ -150,6 +150,109 @@ class VMTest < Minitest::Test
     assert_run input, 55
   end
 
+  def test_method_call
+    assert_run "def add(a, b)\n  a + b\nend\nadd(1, 2)", 3
+    # 引数は左から順に渡る
+    assert_run "def sub(a, b)\n  a - b\nend\nsub(10, 3)", 7
+    # 括弧なし呼び出し・0引数呼び出し
+    assert_run "def add(a, b)\n  a + b\nend\nadd 1, 2", 3
+    assert_run "def hello\n  42\nend\nhello", 42
+  end
+
+  def test_def_and_empty_method_return_nil
+    assert_run "def f\nend", nil
+    assert_run "def f\nend\nf", nil
+  end
+
+  def test_recursion
+    input = <<~SRC
+      def fib(n)
+        if n < 2
+          return n
+        end
+        fib(n - 1) + fib(n - 2)
+      end
+      fib(15)
+    SRC
+    assert_run input, 610
+  end
+
+  # if も式なので、最後に評価した分岐の値がメソッドの戻り値になる
+  def test_implicit_return
+    input = <<~SRC
+      def fact(n)
+        if n <= 1
+          1
+        else
+          n * fact(n - 1)
+        end
+      end
+      fact(10)
+    SRC
+    assert_run input, 3628800
+  end
+
+  # メソッドのローカル変数はトップレベルの変数と別物
+  def test_method_has_own_locals
+    input = <<~SRC
+      x = 100
+      def f(y)
+        x = y * 2
+        x + 1
+      end
+      f(5) + x
+    SRC
+    assert_run input, 111
+  end
+
+  def test_return_from_while
+    input = <<~SRC
+      def first_over(limit)
+        i = 0
+        while true
+          if i * i > limit
+            return i
+          end
+          i = i + 1
+        end
+      end
+      first_over(50)
+    SRC
+    assert_run input, 8
+  end
+
+  def test_top_level_return
+    assert_run "return 1\n2", 1
+  end
+
+  def test_redefine_method
+    assert_run "def f\n  1\nend\ndef f\n  2\nend\nf", 2
+  end
+
+  def test_stack_is_empty_after_calls
+    source = "def fib(n)\n  if n < 2\n    return n\n  end\n  fib(n - 1) + fib(n - 2)\nend\nfib(10)"
+    vm = Belial::VM::VM.new(Belial.compile(source))
+    assert_equal 55, vm.run
+    assert_equal [], vm.stack
+  end
+
+  def test_undefined_method
+    error = assert_raises(Belial::VM::VMError) { Belial.run('foo') }
+    assert_equal "undefined method 'foo'", error.message
+    # 定義より前の呼び出し
+    assert_raises(Belial::VM::VMError) { Belial.run("f\ndef f\n  1\nend") }
+  end
+
+  def test_wrong_number_of_arguments
+    error = assert_raises(Belial::VM::VMError) { Belial.run("def f(a)\n  a\nend\nf(1, 2)") }
+    assert_equal "wrong number of arguments for 'f' (given 2, expected 1)", error.message
+  end
+
+  def test_stack_level_too_deep
+    error = assert_raises(Belial::VM::VMError) { Belial.run("def f(n)\n  f(n + 1)\nend\nf(0)") }
+    assert_equal "stack level too deep", error.message
+  end
+
   def test_comparison_type_error
     error = assert_raises(Belial::VM::VMError) { Belial.run('1 < true') }
     assert_equal "undefined operation '<' for 1, true", error.message

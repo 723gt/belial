@@ -72,9 +72,29 @@ module Belial
           compile_if(node)
         when AST::While
           compile_while(node)
+        when AST::Def
+          compile_def(node)
+        when AST::Call
+          node.args.each { |arg| compile_node(arg) }
+          @iseq.emit(:send, node.name.to_sym, node.args.size)
+        when AST::Return
+          node.value ? compile_node(node.value) : @iseq.emit(:putnil)
+          @iseq.emit(:leave)
         else
           unsupported(node)
         end
+      end
+
+      # メソッド本体を別の ISeq にコンパイルし、definemethod で登録する（def 自体の値は nil）。
+      # 引数はローカル変数の先頭 params 個のスロットになる
+      def compile_def(node)
+        outer = @iseq
+        @iseq = ISeq.new(node.name, params: node.params.size, locals: node.params.dup)
+        compile_body(node.body)
+        @iseq.emit(:leave)
+        method_iseq = @iseq
+        @iseq = outer
+        @iseq.emit(:definemethod, node.name.to_sym, method_iseq)
       end
 
       # 代入も式なので、代入した値をスタックに残す（dup してから setlocal）

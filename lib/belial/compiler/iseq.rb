@@ -32,16 +32,27 @@ module Belial
         locals.index(name)
       end
 
-      # 命令列を読める形の文字列にする
+      # 命令列を読める形の文字列にする。definemethod で参照しているメソッドの命令列も後ろに続ける
       #   == main
+      #   0000 definemethod :one <iseq one>
+      #   0001 leave
+      #
+      #   == one
       #   0000 putobject 1
       #   0001 leave
       def disasm
         lines = ["== #{name}"]
+        children = []
         insns.each_with_index do |(opcode, *operands), i|
+          children.concat(operands.grep(self.class))
           lines << format("%04d %s", i, [opcode, *operands.map(&:inspect)].join(" "))
         end
-        lines.join("\n")
+        [lines.join("\n"), *children.map(&:disasm)].join("\n\n")
+      end
+
+      # 命令のオペランドやデバッグ表示で中身を全部出さないようにする
+      def inspect
+        "<iseq #{name}>"
       end
     end
   end

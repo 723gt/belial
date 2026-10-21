@@ -158,9 +158,93 @@ class CompilerTest < Minitest::Test
     ISEQ
   end
 
+  # メソッドの本体は別の ISeq になり、disasm では main の後ろに続く
+  def test_def_and_call
+    input = <<~SRC
+      def add(x, y)
+        x + y
+      end
+      add(1, 2)
+    SRC
+    assert_disasm input, <<~ISEQ
+      == main
+      0000 definemethod :add <iseq add>
+      0001 pop
+      0002 putobject 1
+      0003 putobject 2
+      0004 send :add 2
+      0005 leave
+
+      == add
+      0000 getlocal 0
+      0001 getlocal 1
+      0002 add
+      0003 leave
+    ISEQ
+  end
+
+  def test_method_locals_start_with_params
+    iseq = Belial.compile("def f(a, b)\n  c = a\nend")
+    method_iseq = iseq.insns[0][2]
+    assert_equal 2, method_iseq.params
+    assert_equal ["a", "b", "c"], method_iseq.locals
+    assert_equal [], iseq.locals
+  end
+
+  def test_zero_arg_call
+    assert_disasm "def one\n  1\nend\none", <<~ISEQ
+      == main
+      0000 definemethod :one <iseq one>
+      0001 pop
+      0002 send :one 0
+      0003 leave
+
+      == one
+      0000 putobject 1
+      0001 leave
+    ISEQ
+  end
+
+  # return はその場で leave する
+  def test_return
+    input = <<~SRC
+      def f(n)
+        if n < 1
+          return 0
+        end
+        n
+      end
+    SRC
+    assert_disasm input, <<~ISEQ
+      == main
+      0000 definemethod :f <iseq f>
+      0001 leave
+
+      == f
+      0000 getlocal 0
+      0001 putobject 1
+      0002 lt
+      0003 branchunless 7
+      0004 putobject 0
+      0005 leave
+      0006 jump 8
+      0007 putnil
+      0008 pop
+      0009 getlocal 0
+      0010 leave
+    ISEQ
+  end
+
+  def test_return_without_value
+    assert_disasm 'return', <<~ISEQ
+      == main
+      0000 putnil
+      0001 leave
+      0002 leave
+    ISEQ
+  end
+
   def test_unsupported_nodes
-    assert_compile_error "def f\nend", /\ADef is not supported yet/
-    assert_compile_error 'foo', /\ACall is not supported yet/
     assert_compile_error '"a"', /\AStrLit is not supported yet/
     assert_compile_error '[1]', /\AArrayLit is not supported yet/
   end

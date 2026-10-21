@@ -20,6 +20,9 @@ module Belial
         ge: :>=
       }
 
+      # これより深く呼び出すと無限再帰とみなして止める
+      MAX_FRAMES = 10_000
+
       attr_reader :stack
 
       def initialize(iseq, debug: false)
@@ -27,6 +30,7 @@ module Belial
         @debug = debug
         @stack = []
         @frames = []
+        @methods = {} # メソッド名(Symbol) => ISeq
       end
 
       # main の ISeq を実行し、最後の leave で返された値を返す
@@ -75,6 +79,13 @@ module Belial
             frame.pc = operands[0]
           when :branchunless
             frame.pc = operands[0] unless truthy?(pop)
+          when :definemethod
+            name, iseq = operands
+            @methods[name] = iseq
+            push nil
+          when :send
+            name, argc = operands
+            call_method(name, argc)
           when :leave
             value = pop
             finished = @frames.pop
@@ -100,11 +111,25 @@ module Belial
         @stack.pop
       end
 
-      # 現在のスタックの先頭を bp にしてフレームを作り、ローカル変数の領域を nil で確保する
-      def push_frame(iseq)
-        bp = @stack.size
-        iseq.locals.size.times { push nil }
+      # スタックに積まれた argc 個の引数の先頭を bp にしてフレームを作る。
+      # 引数がそのままローカル変数 0〜argc-1 になり、残りのローカル変数の領域を nil で確保する
+      def push_frame(iseq, argc = 0)
+        raise VMError, "stack level too deep" if @frames.size >= MAX_FRAMES
+
+        bp = @stack.size - argc
+        (iseq.locals.size - argc).times { push nil }
         @frames.push(Frame.new(iseq, 0, bp))
+      end
+
+      # 新しいフレームを積むだけで、実行は run のループがそのまま続ける。
+      # 呼び出し先の leave で戻り値が引数の位置に置き換わる
+      def call_method(name, argc)
+        iseq = @methods[name]
+        raise VMError, "undefined method '#{name}'" unless iseq
+        if argc != iseq.params
+          raise VMError, "wrong number of arguments for '#{name}' (given #{argc}, expected #{iseq.params})"
+        end
+        push_frame(iseq, argc)
       end
 
       # Ruby と同じく false と nil だけが偽
