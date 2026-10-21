@@ -9,8 +9,8 @@ module Belial
     Compiler::Compiler.new.compile(program)
   end
 
-  # ソースを実行し、最後に評価した式の値を返す
-  def self.run(source, debug: false)
-    VM::VM.new(compile(source), debug: debug).run
+  # ソースを実行し、最後に評価した式の値を返す。out は puts / p の出力先
+  def self.run(source, debug: false, out: $stdout)
+    VM::VM.new(compile(source), debug: debug, out: out).run
   end
 end

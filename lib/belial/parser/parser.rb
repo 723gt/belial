@@ -4,7 +4,17 @@ require_relative 'ast'
 
 module Belial
   module Parser
-    class ParseError < StandardError; end
+    class ParseError < StandardError
+      # 入力の終わりで起きたエラーか。REPL で「続きの行を読む」かの判定に使う
+      def initialize(message, at_eof: false)
+        super(message)
+        @at_eof = at_eof
+      end
+
+      def at_eof?
+        @at_eof
+      end
+    end
 
     # Pratt パーサ（演算子順位解析）。
     # @cur は「まだ消費していない次のトークン」を指す。各 parse_* は自分の読んだ範囲の
@@ -34,13 +44,14 @@ module Belial
       # if / while / def の本体の終わりを表すトークン
       BODY_END = [T_END, ELSE, ELSIF]
 
-      def initialize(input)
+      # locals: すでにあるトップレベルの変数（REPL で前の入力の変数を変数として読むため）
+      def initialize(input, locals: [])
         @analyzer = LexicalAnalyzer.new(input)
         @analyzer.createLexer
         @tokens = [] # 先読みしたトークン
         @cur = @analyzer.nextToken
         # スコープごとの「ここまでに代入された名前」。ローカル変数かメソッド呼び出しかの判定に使う
-        @scopes = [Set.new]
+        @scopes = [Set.new(locals)]
       end
 
       def parse_program
@@ -76,7 +87,7 @@ module Belial
       end
 
       def error(message)
-        raise ParseError, "#{@cur.line}:#{@cur.column}: #{message}"
+        raise ParseError.new("#{@cur.line}:#{@cur.column}: #{message}", at_eof: @cur.type == EOF)
       end
 
       def describe(token)

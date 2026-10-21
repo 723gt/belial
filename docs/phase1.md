@@ -164,7 +164,17 @@ LocalVar(name)  IntLit  StrLit  BoolLit  NilLit  ArrayLit(elements)
   `if` / `while` は新しいスコープを作らない。
 - **メソッド**: 最後に評価した式の値が戻り値。`return` で途中で抜けられる。再帰呼び出しができる。
   定義はトップレベルのみ（メソッドの中で `def` は書けない）。
-- **組み込み関数**: `puts`、`p`、`len`、`push(arr, x)`。
+- **組み込み関数**: 同じ名前のメソッドを `def` すると、そちらが優先される。
+
+  | 関数 | 引数 | 動作 | 戻り値 |
+  | --- | --- | --- | --- |
+  | `puts` | 可変長 | 引数を1つずつ行に出力（配列は要素ごと、nil は空行） | nil |
+  | `p` | 可変長 | inspect した形で出力 | 引数（0個なら nil、2個以上なら配列） |
+  | `len(x)` | 1 | 配列・文字列の長さ | 整数 |
+  | `push(arr, x)` | 2 | 配列の末尾に追加（配列そのものを書き換える） | arr |
+- **文字列**: `+` で連結、`==` / `!=` で比較、`s[i]` で1文字取り出し。
+- **配列**: リテラルは評価するたびに新しい配列を作る。`a[i]` で要素を取り出す（範囲外は nil）。
+  要素の書き換え `a[i] = v` は Phase 2。
 - **エラー**: 未定義メソッドの呼び出し、引数の数の不一致、型の合わない演算は実行時エラーで停止する。
 
 ## バイトコード
@@ -294,9 +304,42 @@ leave の直後            [ 3 ]                bp から上を捨てて戻り�
 
 ```ruby
 require_relative 'lib/belial'
-Belial.compile(source)              # => ISeq
-Belial.run(source, debug: false)    # => 最後に評価した式の値
+Belial.compile(source)                          # => ISeq
+Belial.run(source, debug: false, out: $stdout)  # => 最後に評価した式の値（out は puts / p の出力先）
 ```
+
+## 実行コマンドと REPL
+
+```
+ruby bin/belial examples/phase1.bl    # ファイルを実行
+ruby bin/belial -e 'puts 1 + 2'       # 引数のコードを実行
+ruby bin/belial --disasm -e '1 + 2'   # 実行せずに命令列を表示
+ruby bin/belial -d -e '1 + 2'         # 命令ごとのスタックを標準エラーに表示
+ruby bin/belial                       # REPL
+```
+
+- 構文エラーは `ファイル名:行:列: 内容`、実行時エラーは `ファイル名: 内容` を標準エラーに出し、終了コード 1 で終わる。
+- REPL は1入力ごとに コンパイル → 実行 し、`=> 値` を表示する。`exit` / `quit` / Ctrl-D で終了。
+
+```
+belial> def add(a, b)
+   ...>   a + b
+   ...> end
+=> nil
+belial> x = 5
+=> 5
+belial> add x, 2
+=> 7
+```
+
+REPL の仕組み:
+
+- `def` や `if` が閉じていない（入力の終わりで構文エラーになる）間は、続きの行を読み足す。
+  `ParseError#at_eof?` で判定する。
+- 同じ VM を使い続けるので、定義したメソッドが残る。
+- トップレベルの変数を引き継ぐため、これまでの変数名をパーサ（変数かメソッド呼び出しかの判定）と
+  コンパイラ（同じスロット番号を使う）に渡す。VM は前回の main の変数の値を次の main のスロットに入れ直す。
+- エラーになった入力の代入はなかったことになる（変数の値は前の入力の終わりの状態に戻る）。
 
 ## 実装ステップ
 
@@ -305,5 +348,5 @@ Belial.run(source, debug: false)    # => 最後に評価した式の値
 - [x] 3. コンパイラと VM: 整数の四則演算
 - [x] 4. 変数、比較、`if` / `while`
 - [x] 5. メソッド定義・呼び出し・`return`・再帰
-- [ ] 6. 文字列・配列・組み込み関数、実行コマンド `bin/belial` と REPL
+- [x] 6. 文字列・配列・組み込み関数、実行コマンド `bin/belial` と REPL
 - [x] 7. 既存の YARV 実行器を `lib/belial/yarv/` へ移動（`Belial::YARV::VM`。新しい VM と名前がぶつかるため 3 と一緒に実施）

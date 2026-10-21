@@ -1,4 +1,5 @@
 require 'minitest/autorun'
+require 'stringio'
 require_relative '../../lib/belial'
 
 class VMTest < Minitest::Test
@@ -277,6 +278,114 @@ class VMTest < Minitest::Test
     iseq = Belial::Compiler::ISeq.new("main")
     iseq.emit(:nop)
     assert_raises(Belial::VM::VMError) { Belial::VM::VM.new(iseq).run }
+  end
+
+  def test_string
+    assert_run '"abc"', "abc"
+    assert_run '"a" + "b"', "ab"
+    assert_run '"a" == "a"', true
+    assert_run '"a" != "b"', true
+    assert_run '"abc"[1]', "b"
+    error = assert_raises(Belial::VM::VMError) { Belial.run('"a" + 1') }
+    assert_equal %q(undefined operation '+' for "a", 1), error.message
+  end
+
+  def test_array
+    assert_run '[1, 2 + 3, "x"]', [1, 5, "x"]
+    assert_run '[]', []
+    assert_run '[[1, 2], [3]][0][1]', 2
+    assert_run "xs = [10, 20]\nxs[1]", 20
+    # 範囲外は nil
+    assert_run "xs = [10, 20]\nxs[5]", nil
+    assert_run '[1] == [1]', true
+  end
+
+  def test_index_errors
+    assert_raises(Belial::VM::VMError) { Belial.run('1[0]') }
+    assert_raises(Belial::VM::VMError) { Belial.run('[1]["a"]') }
+  end
+
+  # 配列リテラルは評価するたびに新しい配列を作る
+  def test_array_literal_creates_new_array
+    input = <<~SRC
+      def make
+        [1]
+      end
+      a = make
+      push(a, 2)
+      len(make)
+    SRC
+    assert_run input, 1
+  end
+
+  def test_puts
+    out = StringIO.new
+    result = Belial.run('puts 1, "a", nil, [2, 3]', out: out)
+    assert_nil result
+    assert_equal "1\na\n\n2\n3\n", out.string
+
+    out = StringIO.new
+    Belial.run('puts', out: out)
+    assert_equal "\n", out.string
+  end
+
+  def test_p
+    out = StringIO.new
+    assert_equal "a", Belial.run('p "a"', out: out)
+    assert_equal %Q("a"\n), out.string
+
+    out = StringIO.new
+    assert_equal [1, nil], Belial.run('p 1, nil', out: out)
+    assert_equal "1\nnil\n", out.string
+  end
+
+  def test_len_and_push
+    assert_run 'len([1, 2, 3])', 3
+    assert_run 'len("hello")', 5
+    assert_run "xs = [1]\npush(xs, 2)\nxs", [1, 2]
+    error = assert_raises(Belial::VM::VMError) { Belial.run('len(1)') }
+    assert_equal "undefined operation 'len' for 1", error.message
+    assert_raises(Belial::VM::VMError) { Belial.run('push(1, 2)') }
+  end
+
+  def test_builtin_wrong_number_of_arguments
+    error = assert_raises(Belial::VM::VMError) { Belial.run('len(1, 2)') }
+    assert_equal "wrong number of arguments for 'len' (given 2, expected 1)", error.message
+  end
+
+  # 同じ名前のメソッドを定義すると組み込み関数より優先される
+  def test_method_overrides_builtin
+    assert_run "def len(x)\n  0\nend\nlen([1])", 0
+  end
+
+  # 同じ VM で続けて run すると、メソッドとトップレベルの変数を引き継ぐ（REPL 用）
+  def test_run_keeps_state
+    vm = Belial::VM::VM.new
+    compile = lambda do |source, locals|
+      program = Belial::Parser::Parser.new(source, locals: locals).parse_program
+      Belial::Compiler::Compiler.new.compile(program, locals: locals)
+    end
+
+    first = compile.call("x = 10\ndef double(n)\n  n * 2\nend", [])
+    vm.run(first)
+    second = compile.call("double(x) + 1", first.locals)
+    assert_equal 21, vm.run(second)
+  end
+
+  # 途中でエラーになっても、同じ VM で次の run ができる
+  def test_run_after_error
+    vm = Belial::VM::VM.new
+    assert_raises(Belial::VM::VMError) { vm.run(Belial.compile("1 + (2 / 0)")) }
+    assert_equal [], vm.stack
+    assert_equal 3, vm.run(Belial.compile("1 + 2"))
+  end
+
+  # docs/phase1.md の到達目標のサンプル
+  def test_phase1_example
+    out = StringIO.new
+    source = File.read(File.expand_path('../../examples/phase1.bl', __dir__), encoding: "UTF-8")
+    Belial.run(source, out: out)
+    assert_equal "0\n1\n1\n2\n3\n5\n8\n13\n21\n34\n3\ntrue\nhello\n", out.string
   end
 
   def test_debug_output

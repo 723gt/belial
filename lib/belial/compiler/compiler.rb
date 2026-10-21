@@ -26,8 +26,9 @@ module Belial
         "!" => :not
       }
 
-      def compile(program)
-        @iseq = ISeq.new("main")
+      # locals: すでにあるトップレベルの変数（REPL で前の入力の変数を同じスロットのまま使うため）
+      def compile(program, locals: [])
+        @iseq = ISeq.new("main", locals: locals.dup)
         compile_body(program.body)
         @iseq.emit(:leave)
         @iseq
@@ -51,6 +52,16 @@ module Belial
         case node
         when AST::IntLit
           @iseq.emit(:putobject, node.value)
+        when AST::StrLit
+          # 命令列の中の文字列を書き換えられないようにする
+          @iseq.emit(:putobject, node.value.freeze)
+        when AST::ArrayLit
+          node.elements.each { |element| compile_node(element) }
+          @iseq.emit(:newarray, node.elements.size)
+        when AST::Index
+          compile_node(node.target)
+          compile_node(node.index)
+          @iseq.emit(:index)
         when AST::BoolLit
           @iseq.emit(:putobject, node.value)
         when AST::NilLit

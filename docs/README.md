@@ -16,7 +16,7 @@
 
 | フェーズ | 資料 | 内容 |
 | --- | --- | --- |
-| Phase 1 | [phase1.md](phase1.md) | 最小の言語: 整数・文字列・配列、変数、`if` / `while`、メソッド、括弧なし呼び出し |
+| Phase 1（実装済み） | [phase1.md](phase1.md) | 最小の言語: 整数・文字列・配列、変数、`if` / `while`、メソッド、括弧なし呼び出し |
 | Phase 2 | [phase2.md](phase2.md) | 表現力: 式展開、ハッシュ、ブロックとクロージャ、エラー位置の表示 |
 | Phase 3 | [phase3.md](phase3.md) | オブジェクト: `.` によるメソッド呼び出し、クラス、簡単な最適化 |
 
@@ -26,15 +26,18 @@
 ## ディレクトリ構成
 
 ```
+lib/belial.rb # Belial.compile / Belial.run
 lib/belial/
-  lexer/      token.rb, lexer.rb
+  lexer/      token.rb, lexer.rb, lexical_analyzer.rb
   parser/     parser.rb, ast.rb
   compiler/   compiler.rb, iseq.rb
   vm/         vm.rb, frame.rb, builtins.rb
-  yarv/       vm.rb   # 既存の YARV 実行器（参考実装として残す）
-bin/belial    # 実行コマンド（belial file.bl / -d / --disasm）
+  repl.rb
+  yarv/       vm.rb   # 既存の YARV 実行器（参考実装として残す。boot / disasm から使う）
+bin/belial    # 実行コマンド（belial file.bl / -e / -d / --disasm / 引数なしで REPL）
+examples/     # サンプルプログラム（.bl）
 docs/         # 設計資料
-test/
+test/         # lexers / parser / compiler / vm / repl / cli
 ```
 
 - ソースの拡張子は `.bl`。

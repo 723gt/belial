@@ -246,6 +246,20 @@ class ParserTest < Minitest::Test
     assert_parse input, expected
   end
 
+  # REPL 用: 前の入力で作られた変数を渡すと、最初から変数として読む
+  def test_existing_locals
+    program = Belial::Parser::Parser.new("x -1", locals: ["x"]).parse_program
+    assert_equal "(- (lvar x) 1)", program.to_sexp
+  end
+
+  # 入力の終わりで起きたエラーかどうか（REPL が続きの行を読むかの判定）
+  def test_error_at_eof
+    assert parse_error("def f\n").at_eof?
+    assert parse_error("1 +").at_eof?
+    assert parse_error("foo(1,").at_eof?
+    refute parse_error("1 2").at_eof?
+  end
+
   def test_errors
     assert_parse_error 'def a', /\A1:6: expected NEWLINE, got end of input/
     assert_parse_error "def a\n  def b\n  end\nend", /\A2:3: def cannot be nested/
@@ -264,6 +278,10 @@ class ParserTest < Minitest::Test
 
   def assert_parse(input, expected)
     assert_equal expected, parse(input).to_sexp, "input: #{input.inspect}"
+  end
+
+  def parse_error(input)
+    assert_raises(Belial::Parser::ParseError, "input: #{input.inspect}") { parse(input) }
   end
 
   def assert_parse_error(input, message = nil)

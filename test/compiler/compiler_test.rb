@@ -244,9 +244,42 @@ class CompilerTest < Minitest::Test
     ISEQ
   end
 
-  def test_unsupported_nodes
-    assert_compile_error '"a"', /\AStrLit is not supported yet/
-    assert_compile_error '[1]', /\AArrayLit is not supported yet/
+  def test_string_array_and_index
+    assert_disasm '["a", [1]][0]', <<~ISEQ
+      == main
+      0000 putobject "a"
+      0001 putobject 1
+      0002 newarray 1
+      0003 newarray 2
+      0004 putobject 0
+      0005 index
+      0006 leave
+    ISEQ
+  end
+
+  def test_builtin_call
+    assert_disasm 'puts "hi"', <<~ISEQ
+      == main
+      0000 putobject "hi"
+      0001 send :puts 1
+      0002 leave
+    ISEQ
+  end
+
+  # REPL 用: すでにある変数は同じスロットのまま、新しい変数はその後ろに入る
+  def test_compile_with_existing_locals
+    program = Belial::Parser::Parser.new("y = x", locals: ["x"]).parse_program
+    iseq = Belial::Compiler::Compiler.new.compile(program, locals: ["x"])
+    assert_equal ["x", "y"], iseq.locals
+    assert_equal [:getlocal, 0], iseq.insns[0]
+  end
+
+  UnknownNode = Struct.new(:value)
+
+  def test_unknown_node
+    program = Belial::AST::Program.new([UnknownNode.new(1)])
+    error = assert_raises(Belial::Compiler::CompileError) { Belial::Compiler::Compiler.new.compile(program) }
+    assert_equal "UnknownNode is not supported yet", error.message
   end
 
   private

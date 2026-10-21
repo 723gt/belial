@@ -1,0 +1,42 @@
+#!/usr/bin/env ruby
+# Usage:
+#   belial file.bl         ファイルを実行する
+#   belial -e 'puts 1'     引数のコードを実行する
+#   belial                 REPL を起動する
+#   -d / --debug           命令ごとにスタックを表示する
+#   --disasm               実行せずに命令列を表示する
+require 'optparse'
+require_relative '../lib/belial'
+require_relative '../lib/belial/repl'
+
+options = {}
+OptionParser.new do |opts|
+  opts.banner = "Usage: belial [options] [file.bl]"
+  opts.on("-d", "--debug", "Print each instruction and the stack") { options[:debug] = true }
+  opts.on("--disasm", "Print the instruction sequence instead of running") { options[:disasm] = true }
+  opts.on("-e CODE", "Run CODE") { |code| options[:code] = code }
+end.parse!
+
+if options[:code].nil? && ARGV.empty?
+  Belial::REPL.new(debug: options[:debug]).start
+  exit
+end
+
+name = options[:code] ? "-e" : ARGV[0]
+source = options[:code] || File.read(ARGV[0], encoding: "UTF-8")
+
+begin
+  iseq = Belial.compile(source)
+  if options[:disasm]
+    puts iseq.disasm
+  else
+    Belial::VM::VM.new(iseq, debug: options[:debug]).run
+  end
+rescue Belial::Parser::ParseError => e
+  # ParseError のメッセージは「行:列: 内容」
+  warn "#{name}:#{e.message}"
+  exit 1
+rescue Belial::Compiler::CompileError, Belial::VM::VMError => e
+  warn "#{name}: #{e.message}"
+  exit 1
+end
