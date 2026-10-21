@@ -1,0 +1,23 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # ruby-version を省略すると .ruby-version（3.3.6）を使う
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+
+      # lexer / parser / compiler / vm / repl / cli のすべてのテスト
+      - name: Run tests
+        run: rake test

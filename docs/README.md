@@ -41,6 +41,8 @@ test/         # lexers / parser / compiler / vm / repl / cli
 ```
 
 - ソースの拡張子は `.bl`。
+- テストは `rake test`（または `rake`）ですべて実行する。GitHub Actions（`.github/workflows/ci.yaml`）が
+  main への push とプルリクエストのたびに同じコマンドを実行する。
 - `require` は `require_relative` に統一し、どこからでもテストを実行できるようにする。
 
 ## 決定記録
