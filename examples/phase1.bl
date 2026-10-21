@@ -1,0 +1,22 @@
+# フィボナッチ
+def fib(n)
+  if n < 2
+    return n
+  end
+  fib(n - 1) + fib(n - 2)
+end
+
+i = 0
+while i < 10
+  puts fib(i)
+  i = i + 1
+end
+
+xs = [1, 2, 3]
+puts len(xs)
+puts xs[0] == 1
+
+def hello
+  puts "hello"
+end
+hello
